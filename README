@@ -1,0 +1,123 @@
+NAME
+    Test::Leaner - A slimmer Test::More for when you favor performance over
+    completeness.
+
+VERSION
+    Version 0.01
+
+SYNOPSIS
+        use Test::Leaner tests => 10_000;
+        for (1 .. 10_000) {
+         ...
+         is $one, 1, "checking situation $_";
+        }
+
+DESCRIPTION
+    When profiling some Test::More-based test script that contained about 10
+    000 unit tests, I realized that 60% of the time was spent in
+    Test::Builder itself, even though every single test actually involved a
+    costly "eval STRING".
+
+    This module aims to be a partial replacement to Test::More in those
+    situations where you want to run a large number of simple tests. Its
+    functions behave the same as their Test::More counterparts, except for
+    the following differences :
+
+    *   Stringification isn't forced on the test operands. However, "ok"
+        honors 'bool' overloading, "is" and "is_deeply" honor 'eq'
+        overloading (and just that one) and "cmp_ok" honors whichever
+        overloading category corresponds to the specified operator.
+
+    *   "pass", "fail", "ok", "is", "isnt", "like", "unlike" and "cmp_ok"
+        are all guaranteed to return the truth value of the test.
+
+    *   "cmp_ok" throws an exception if the given operator isn't a valid
+        Perl binary operator (except '=' and variants). It also tests in
+        scalar context, so '..' will be treated as the flip-flop operator
+        and not the range operator.
+
+    *   The tests don't output any kind of default diagnostic in case of
+        failure ; the rationale being that if you have a large number of
+        tests and a lot of them are failing, then you don't want to be
+        flooded by diagnostics.
+
+    *   "use_ok", "require_ok", "can_ok", "isa_ok", "new_ok", "subtest",
+        "explain", "TODO" blocks and "todo_skip" are not implemented.
+
+    *   Test::Leaner depends on Scalar::Util, while Test::More does not.
+
+FUNCTIONS
+    The following functions from Test::More are implemented and exported by
+    default.
+
+  "plan [ tests => $count | 'no_plan' | skip_all => $reason ]"
+  "skip $reason => $count"
+  "done_testing [ $count ]"
+  "ok $ok [, $desc ]"
+  "pass [ $desc ]"
+  "fail [ $desc ]"
+  "is $got, $expected [, $desc ]"
+  "isnt $got, $expected [, $desc ]"
+  "like $got, $regexp_expected [, $desc ]"
+  "unlike $got, $regexp_expected, [, $desc ]"
+  "cmp_ok $got, $op, $expected [, $desc ]"
+  "is_deeply $got, $expected [, $desc ]"
+  "diag @text"
+  "note @text"
+  "BAIL_OUT [ $desc ]"
+    Test::Leaner also provides some functions of its own, which are never
+    exported.
+
+  "tap_stream [ $fh ]"
+    Read/write accessor for the filehandle to which the tests are outputted.
+    On write, it also turns autoflush on onto $fh.
+
+    Note that it can only be used as a write accessor before you start any
+    thread, as threads::shared cannot reliably share filehandles.
+
+    Defaults to "STDOUT".
+
+  "diag_stream [ $fh ]"
+    Read/write accessor for the filehandle to which the diagnostics are
+    printed. On write, it also turns autoflush on onto $fh.
+
+    Just like "tap_stream", it can only be used as a write accessor before
+    you start any thread, as threads::shared cannot reliably share
+    filehandles.
+
+    Defaults to "STDERR".
+
+  "THREADSAFE"
+    This constant evaluates to true if and only if Test::Leaner is
+    thread-safe, i.e. when this version of "perl" is at least 5.8, has been
+    compiled with "useithreads" defined, and threads has been loaded before
+    Test::Leaner. In that case, it also needs a working threads::shared.
+
+DEPENDENCIES
+    perl 5.6.
+
+    Exporter, Scalar::Util, Test::More.
+
+AUTHOR
+    Vincent Pit, "<perl at profvince.com>", <http://www.profvince.com>.
+
+    You can contact me by mail or on "irc.perl.org" (vincent).
+
+BUGS
+    Please report any bugs or feature requests to "bug-test-leaner at
+    rt.cpan.org", or through the web interface at
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Test-Leaner>. I will be
+    notified, and then you'll automatically be notified of progress on your
+    bug as I make changes.
+
+SUPPORT
+    You can find documentation for this module with the perldoc command.
+
+        perldoc Test::Leaner
+
+COPYRIGHT & LICENSE
+    Copyright 2010 Vincent Pit, all rights reserved.
+
+    This program is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
