@@ -5,7 +5,10 @@ use warnings;
 
 use Test::More ();
 
-BEGIN { *tm_is = \&Test::More::is }
+BEGIN {
+ delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE};
+ *tm_is = \&Test::More::is;
+}
 
 Test::More::plan(tests => 2 * 15);
 

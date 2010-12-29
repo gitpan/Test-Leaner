@@ -12,9 +12,8 @@ my $dist = 'Test-Leaner';
 $file = "lib/$file.pm";
 
 my %PREREQ_PM = (
- 'Exporter'     => 0,
- 'Scalar::Util' => 0,
- 'Test::More'   => 0,
+ 'Exporter'   => 0,
+ 'Test::More' => 0,
 );
 
 my %META = (

@@ -15,6 +15,8 @@ BEGIN {
    CORE::exit $_[0];
   }
  };
+
+ delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE};
 }
 
 use Test::Leaner ();

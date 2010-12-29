@@ -3,6 +3,10 @@
 use strict;
 use warnings;
 
+BEGIN { delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE} }
+
+use Test::Leaner tests => 7 * 10 + 4 * 7 + 10;
+
 {
  package Test::Leaner::TestCmpNum;
 
@@ -23,8 +27,6 @@ use warnings;
   bless { num => $_[0] }, $class
  }
 }
-
-use Test::Leaner tests => 7 * 10 + 4 * 7 + 10;
 
 my @num_tests = (
  [ '1.0', '==', '1.0' ],

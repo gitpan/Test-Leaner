@@ -1,5 +1,19 @@
 Revision history for Test-Leaner
 
+0.02    2010-12-29 17:00 UTC
+        + Add : You can fall back to use Test::More by setting the
+                PERL_TEST_LEANER_USES_TEST_MORE environment variable.
+        + Doc : Document the restrictions on the regexp argument of like() and
+                unlike().
+                Thanks Sébastien Aperghis-Tramoni for spotting this.
+        + Doc : Document that is_deeply() doesn't check for memory cycles.
+        + Fix : The plan will now correctly be printed at the end when
+                'no_plan' was specified and some tests were failing.
+        + Fix : Only print an ending plan once when the process is forked.
+        + Opt : is_deeply() was optimized for large datastructures.
+        + Rem : Scalar::Util is no longer an hard dependency. It will be used
+                if it is present, but a fallback implementation is bundled.
+
 0.01    2010-12-28 17:00 UTC
         First version, released on an unsuspecting world.
 

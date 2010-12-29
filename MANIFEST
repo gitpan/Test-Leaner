@@ -7,6 +7,7 @@ lib/Test/Leaner.pm
 samples/bench.pl
 t/00-load.t
 t/01-import.t
+t/02-fallback.t
 t/05-pass.t
 t/06-fail.t
 t/07-BAIL_OUT.t
@@ -27,6 +28,7 @@ t/22-is.t
 t/24-cmp_ok.t
 t/26-is_deeply.t
 t/27-is_deeply-failing.t
+t/28-is_deeply-deep.t
 t/91-pod.t
 t/92-pod-coverage.t
 t/95-portability-files.t

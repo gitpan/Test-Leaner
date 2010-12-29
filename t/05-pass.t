@@ -5,6 +5,8 @@ use warnings;
 
 use Test::More;
 
+BEGIN { delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE} }
+
 use Test::Leaner ();
 
 use lib 't/lib';

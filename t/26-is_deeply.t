@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+BEGIN { delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE} }
+
 use Test::Leaner tests => 21 + 2 + 1 + 2;
 
 my $lacunary = [ [ 1, 2, 3 ] => [ 1, 2, 3 ] ];

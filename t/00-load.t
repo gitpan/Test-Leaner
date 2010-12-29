@@ -5,6 +5,8 @@ use warnings;
 
 use Test::More tests => 1;
 
+BEGIN { delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE} }
+
 {
  package Test::Leaner::TestContainer;
  BEGIN {

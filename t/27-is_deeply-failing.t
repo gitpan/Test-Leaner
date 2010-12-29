@@ -5,6 +5,8 @@ use warnings;
 
 use Test::More;
 
+BEGIN { delete $ENV{PERL_TEST_LEANER_USES_TEST_MORE} }
+
 use Test::Leaner ();
 
 use lib 't/lib';
@@ -14,7 +16,7 @@ my $buf;
 capture_to_buffer $buf
              or plan skip_all =>'perl 5.8 required to test is_deeply() failing';
 
-plan tests => 3 * 2 * (30 + 1 + 2);
+plan tests => 3 * 2 * (32 + 1 + 2);
 
 my $shrunk = [ [ 1, 2, 3 ] => [ 1, 2, 3 ] ];
 delete $shrunk->[0]->[2];
@@ -45,6 +47,8 @@ my @tests = (
  [ [ 0 ]     => [ '' ] ],
  [ [ '' ]    => [ ]    ],
 
+ [ [ \1 ] => [ \"1.0" ] ],
+
  [ [ 1, undef, 3 ] => [ 1, 2, 3 ] ],
  [ [ 1, 2, undef ] => [ 1, 2 ] ],
  $shrunk,
@@ -57,6 +61,7 @@ my @tests = (
  [ { a => '' }    => { }         ],
 
  [ { a => 1 } => { 'A' => 1 } ],
+ [ { a => 1 } => { 'a' => \"1.0" } ],
 
  [ [ { a => 1 }, 2, { b => \3 } ] => [ { a => 1 }, 2, { b => \'3.0' } ] ],
 

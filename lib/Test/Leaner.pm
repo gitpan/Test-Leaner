@@ -10,11 +10,11 @@ Test::Leaner - A slimmer Test::More for when you favor performance over complete
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -45,8 +45,18 @@ L</pass>, L</fail>, L</ok>, L</is>, L</isnt>, L</like>, L</unlike> and L</cmp_ok
 
 =item *
 
+L</like> and L</unlike> don't special case regular expressions that are passed as C<'/.../'> strings.
+A string regexp argument is always treated as a the source of the regexp, making C<like $text, $rx> and C<like $text, qr[$rx]> equivalent to each other and to C<cmp_ok $text, '=~', $rx> (and likewise for C<unlike>).
+
+=item *
+
 L</cmp_ok> throws an exception if the given operator isn't a valid Perl binary operator (except C<'='> and variants).
 It also tests in scalar context, so C<'..'> will be treated as the flip-flop operator and not the range operator.
+
+=item *
+
+L</is_deeply> doesn't guard for memory cycles.
+If the two first arguments present parallel memory cycles, the test may result in an infinite loop.
 
 =item *
 
@@ -56,18 +66,17 @@ The tests don't output any kind of default diagnostic in case of failure ; the r
 
 C<use_ok>, C<require_ok>, C<can_ok>, C<isa_ok>, C<new_ok>, C<subtest>, C<explain>, C<TODO> blocks and C<todo_skip> are not implemented.
 
-=item *
-
-L<Test::Leaner> depends on L<Scalar::Util>, while L<Test::More> does not.
-
 =back
 
 =cut
 
-use Exporter     ();
-use Scalar::Util ();
+use Exporter ();
+
+my $main_process;
 
 BEGIN {
+ $main_process = $$;
+
  if ($] >= 5.008 and $INC{'threads.pm'}) {
   my $use_ithreads = do {
    require Config;
@@ -88,6 +97,119 @@ my ($TAP_STREAM, $DIAG_STREAM);
 
 my ($plan, $test, $failed, $no_diag, $done_testing);
 
+our @EXPORT = qw<
+ plan
+ skip
+ done_testing
+ pass
+ fail
+ ok
+ is
+ isnt
+ like
+ unlike
+ cmp_ok
+ is_deeply
+ diag
+ note
+ BAIL_OUT
+>;
+
+=head1 ENVIRONMENT
+
+=head2 C<PERL_TEST_LEANER_USES_TEST_MORE>
+
+If this environment variable is set, L<Test::Leaner> will replace its functions by those from L<Test::More>.
+Moreover, the symbols that are imported you C<use Test::Leaner> will be those from L<Test::More>, but you can still only import the symbols originally defined in L<Test::Leaner> (hence the functions from L<Test::More> that are not implemented in L<Test::Leaner> will not be imported).
+If your version of L<Test::More> is too old and doesn't have some symbols (like L</note> or L</done_testing>), they will be replaced in L<Test::Leaner> by croaking stubs.
+
+This may be useful if your L<Test::Leaner>-based test script fails and you want extra diagnostics.
+
+=cut
+
+sub _handle_import_args {
+ my @imports;
+
+ my $i = 0;
+ while ($i <= $#_) {
+  my $item = $_[$i];
+  my $splice;
+  if (defined $item) {
+   if ($item eq 'import') {
+    push @imports, @{ $_[$i+1] };
+    $splice  = 2;
+   } elsif ($item eq 'no_diag') {
+    lock $plan if THREADSAFE;
+    $no_diag = 1;
+    $splice  = 1;
+   }
+  }
+  if ($splice) {
+   splice @_, $i, $splice;
+  } else {
+   ++$i;
+  }
+ }
+
+ return @imports;
+}
+
+if ($ENV{PERL_TEST_LEANER_USES_TEST_MORE}) {
+ require Test::More;
+
+ my $leaner_stash = \%Test::Leaner::;
+ my $more_stash   = \%Test::More::;
+
+ my %valid_imports;
+
+ for (@EXPORT) {
+  my $replacement = exists $more_stash->{$_} ? *{$more_stash->{$_}}{CODE}
+                                             : undef;
+  if (defined $replacement) {
+   $valid_imports{$_} = 1;
+  } else {
+   $replacement = sub {
+    @_ = ("$_ is not implemented in this version of Test::More");
+    goto &croak;
+   };
+  }
+  no warnings 'redefine';
+  $leaner_stash->{$_} = $replacement;
+ }
+
+ my $import = sub {
+  shift;
+  my @imports = &_handle_import_args;
+  @imports = @EXPORT unless @imports;
+  my @test_more_imports;
+  for (@imports) {
+   if ($valid_imports{$_}) {
+    push @test_more_imports, $_;
+   } else {
+    my $pkg = caller;
+    no strict 'refs';
+    *{$pkg."::$_"} = $leaner_stash->{$_};
+   }
+  }
+  my $test_more_import = 'Test::More'->can('import');
+  @_ = (
+   'Test::More',
+   @_,
+   import => \@test_more_imports,
+  );
+  {
+   lock $plan if THREADSAFE;
+   push @_, 'no_diag' if $no_diag;
+  }
+  goto $test_more_import;
+ };
+
+ no warnings 'redefine';
+ *import = $import;
+
+ return 1;
+}
+
 sub NO_PLAN  () { -1 }
 sub SKIP_ALL () { -2 }
 
@@ -105,13 +227,21 @@ BEGIN {
 
 sub carp {
  my $level = 1 + ($Test::Builder::Level || 0);
- my ($file, $line) = (caller $level)[1, 2];
+ my @caller;
+ do {
+  @caller = caller $level--;
+ } while (!@caller and $level >= 0);
+ my ($file, $line) = @caller[1, 2];
  warn @_, " at $file line $line.\n";
 }
 
 sub croak {
  my $level = 1 + ($Test::Builder::Level || 0);
- my ($file, $line) = (caller $level)[1, 2];
+ my @caller;
+ do {
+  @caller = caller $level--;
+ } while (!@caller and $level >= 0);
+ my ($file, $line) = @caller[1, 2];
  die @_, " at $file line $line.\n";
 }
 
@@ -126,6 +256,8 @@ sub _sanitize_comment {
 The following functions from L<Test::More> are implemented and exported by default.
 
 =head2 C<< plan [ tests => $count | 'no_plan' | skip_all => $reason ] >>
+
+See L<Test::More/plan>.
 
 =cut
 
@@ -172,48 +304,10 @@ sub plan {
  return 1;
 }
 
-our @EXPORT = qw<
- plan
- skip
- done_testing
- pass
- fail
- ok
- is
- isnt
- like
- unlike
- cmp_ok
- is_deeply
- diag
- note
- BAIL_OUT
->;
-
 sub import {
  my $class = shift;
 
- my @imports;
- my $i = 0;
- while ($i <= $#_) {
-  my $item = $_[$i];
-  my $splice;
-  if (defined $item) {
-   if ($item eq 'import') {
-    push @imports, @{ $_[$i+1] };
-    $splice  = 2;
-   } elsif ($item eq 'no_diag') {
-    lock $plan if THREADSAFE;
-    $no_diag = 1;
-    $splice  = 1;
-   }
-  }
-  if ($splice) {
-   splice @_, $i, $splice;
-  } else {
-   ++$i;
-  }
- }
+ my @imports = &_handle_import_args;
 
  if (@_) {
   local $Test::Builder::Level = ($Test::Builder::Level || 0) + 1;
@@ -225,6 +319,8 @@ sub import {
 }
 
 =head2 C<< skip $reason => $count >>
+
+See L<Test::More/skip>.
 
 =cut
 
@@ -261,6 +357,8 @@ sub skip {
 
 =head2 C<done_testing [ $count ]>
 
+See L<Test::More/done_testing>.
+
 =cut
 
 sub done_testing {
@@ -292,6 +390,8 @@ sub done_testing {
 
 =head2 C<ok $ok [, $desc ]>
 
+See L<Test::More/ok>.
+
 =cut
 
 sub ok ($;$) {
@@ -319,6 +419,8 @@ sub ok ($;$) {
 
 =head2 C<pass [ $desc ]>
 
+See L<Test::More/pass>.
+
 =cut
 
 sub pass (;$) {
@@ -328,6 +430,8 @@ sub pass (;$) {
 
 =head2 C<fail [ $desc ]>
 
+See L<Test::More/fail>.
+
 =cut
 
 sub fail (;$) {
@@ -336,6 +440,8 @@ sub fail (;$) {
 }
 
 =head2 C<is $got, $expected [, $desc ]>
+
+See L<Test::More/is>.
 
 =cut
 
@@ -350,6 +456,8 @@ sub is ($$;$) {
 }
 
 =head2 C<isnt $got, $expected [, $desc ]>
+
+See L<Test::More/isnt>.
 
 =cut
 
@@ -436,9 +544,11 @@ IS_BINOP
 
 =head2 C<like $got, $regexp_expected [, $desc ]>
 
-=cut
+See L<Test::More/like>.
 
 =head2 C<unlike $got, $regexp_expected, [, $desc ]>
+
+See L<Test::More/unlike>.
 
 =cut
 
@@ -449,6 +559,8 @@ IS_BINOP
 }
 
 =head2 C<cmp_ok $got, $op, $expected [, $desc ]>
+
+See L<Test::More/cmp_ok>.
 
 =cut
 
@@ -465,49 +577,119 @@ sub cmp_ok ($$$;$) {
 
 =head2 C<is_deeply $got, $expected [, $desc ]>
 
+See L<Test::More/is_deeply>.
+
 =cut
+
+BEGIN {
+ local $@;
+ if (eval { require Scalar::Util; 1 }) {
+  *_reftype = \&Scalar::Util::reftype;
+ } else {
+  # Stolen from Scalar::Util::PP
+  require B;
+  my %tmap = qw<
+   B::NULL   SCALAR
+
+   B::HV     HASH
+   B::AV     ARRAY
+   B::CV     CODE
+   B::IO     IO
+   B::GV     GLOB
+   B::REGEXP REGEXP
+  >;
+  *_reftype = sub ($) {
+   my $r = shift;
+
+   return undef unless length ref $r;
+
+   my $t = ref B::svref_2object($r);
+
+   return exists $tmap{$t} ? $tmap{$t}
+                           : length ref $$r ? 'REF'
+                                            : 'SCALAR'
+  }
+ }
+}
+
+sub _deep_ref_check {
+ my ($x, $y, $ry) = @_;
+
+ no warnings qw<numeric uninitialized>;
+
+ if ($ry eq 'ARRAY') {
+  return 0 unless $#$x == $#$y;
+
+  my ($ex, $ey);
+  for (0 .. $#$y) {
+   $ex = $x->[$_];
+   $ey = $y->[$_];
+
+   # Inline the beginning of _deep_check
+   return 0 if defined $ex xor defined $ey;
+
+   next if not(ref $ex xor ref $ey) and $ex eq $ey;
+
+   $ry = _reftype($ey);
+   return 0 if _reftype($ex) ne $ry;
+
+   return 0 unless $ry and _deep_ref_check($ex, $ey, $ry);
+  }
+
+  return 1;
+ } elsif ($ry eq 'HASH') {
+  return 0 unless keys(%$x) == keys(%$y);
+
+  my ($ex, $ey);
+  for (keys %$y) {
+   return 0 unless exists $x->{$_};
+   $ex = $x->{$_};
+   $ey = $y->{$_};
+
+   # Inline the beginning of _deep_check
+   return 0 if defined $ex xor defined $ey;
+
+   next if not(ref $ex xor ref $ey) and $ex eq $ey;
+
+   $ry = _reftype($ey);
+   return 0 if _reftype($ex) ne $ry;
+
+   return 0 unless $ry and _deep_ref_check($ex, $ey, $ry);
+  }
+
+  return 1;
+ } elsif ($ry eq 'SCALAR' or $ry eq 'REF') {
+  return _deep_check($$x, $$y);
+ }
+
+ return 0;
+}
 
 sub _deep_check {
  my ($x, $y) = @_;
 
  no warnings qw<numeric uninitialized>;
 
- return 0 if defined($x) xor defined($y);
+ return 0 if defined $x xor defined $y;
 
  # Try object identity/eq overloading first. It also covers the case where
  # $x and $y are both undefined.
  # If either $x or $y is overloaded but none has eq overloading, the test will
  # break at that point.
- return 1 if not(ref($x) xor ref($y)) and $x eq $y;
+ return 1 if not(ref $x xor ref $y) and $x eq $y;
 
  # Test::More::is_deeply happily breaks encapsulation if the objects aren't
  # overloaded.
- my $ry = Scalar::Util::reftype($y);
- return 0 if Scalar::Util::reftype($x) ne $ry;
+ my $ry = _reftype($y);
+ return 0 if _reftype($x) ne $ry;
 
  # Shortcut if $x and $y are both not references and failed the previous
  # $x eq $y test.
  return 0 unless $ry;
 
- if ($ry eq 'ARRAY') {
-  if ($#$x == $#$y) {
-   # Prevent vivification of deleted elements by fetching the array values.
-   my ($ex, $ey);
-   _deep_check($ex = $x->[$_], $ey = $y->[$_]) or return 0 for 0 .. $#$x;
-   return 1;
-  }
- } elsif ($ry eq 'HASH') {
-  if (keys(%$x) == keys(%$y)) {
-   (exists $x->{$_} and _deep_check($x->{$_}, $y->{$_}))
-                                                       or return 0 for keys %$y;
-   return 1;
-  }
- } elsif ($ry eq 'SCALAR' or $ry eq 'REF') {
-  return _deep_check($$x, $$y);
- }
-
- return 0;
-};
+ # We know that $x and $y are both references of type $ry, without overloading.
+ _deep_ref_check($x, $y, $ry);
+}
 
 sub is_deeply {
  @_ = (
@@ -537,6 +719,8 @@ sub _diag_fh {
 
 =head2 C<diag @text>
 
+See L<Test::More/diag>.
+
 =cut
 
 sub diag {
@@ -546,6 +730,8 @@ sub diag {
 
 =head2 C<note @text>
 
+See L<Test::More/note>.
+
 =cut
 
 sub note {
@@ -554,6 +740,8 @@ sub note {
 }
 
 =head2 C<BAIL_OUT [ $desc ]>
+
+See L<Test::More/BAIL_OUT>.
 
 =cut
 
@@ -575,7 +763,7 @@ sub BAIL_OUT {
 }
 
 END {
- unless ($?) {
+ if ($main_process == $$ and not $?) {
   lock $plan if THREADSAFE;
 
   if (defined $plan) {
@@ -583,7 +771,8 @@ END {
     $? = $failed <= 254 ? $failed : 254;
    } elsif ($plan >= 0) {
     $? = $test == $plan ? 0 : 255;
-   } elsif ($plan == NO_PLAN) {
+   }
+   if ($plan == NO_PLAN) {
     local $\;
     print $TAP_STREAM "1..$test\n";
    }
@@ -654,7 +843,7 @@ In that case, it also needs a working L<threads::shared>.
 
 L<perl> 5.6.
 
-L<Exporter>, L<Scalar::Util>, L<Test::More>.
+L<Exporter>, L<Test::More>.
 
 =head1 AUTHOR
 

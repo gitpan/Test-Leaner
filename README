@@ -3,7 +3,7 @@ NAME
     completeness.
 
 VERSION
-    Version 0.01
+    Version 0.02
 
 SYNOPSIS
         use Test::Leaner tests => 10_000;
@@ -31,10 +31,20 @@ DESCRIPTION
     *   "pass", "fail", "ok", "is", "isnt", "like", "unlike" and "cmp_ok"
         are all guaranteed to return the truth value of the test.
 
+    *   "like" and "unlike" don't special case regular expressions that are
+        passed as '/.../' strings. A string regexp argument is always
+        treated as a the source of the regexp, making "like $text, $rx" and
+        "like $text, qr[$rx]" equivalent to each other and to "cmp_ok $text,
+        '=~', $rx" (and likewise for "unlike").
+
     *   "cmp_ok" throws an exception if the given operator isn't a valid
         Perl binary operator (except '=' and variants). It also tests in
         scalar context, so '..' will be treated as the flip-flop operator
         and not the range operator.
+
+    *   "is_deeply" doesn't guard for memory cycles. If the two first
+        arguments present parallel memory cycles, the test may result in an
+        infinite loop.
 
     *   The tests don't output any kind of default diagnostic in case of
         failure ; the rationale being that if you have a large number of
@@ -44,27 +54,69 @@ DESCRIPTION
     *   "use_ok", "require_ok", "can_ok", "isa_ok", "new_ok", "subtest",
         "explain", "TODO" blocks and "todo_skip" are not implemented.
 
-    *   Test::Leaner depends on Scalar::Util, while Test::More does not.
+ENVIRONMENT
+  "PERL_TEST_LEANER_USES_TEST_MORE"
+    If this environment variable is set, Test::Leaner will replace its
+    functions by those from Test::More. Moreover, the symbols that are
+    imported you "use Test::Leaner" will be those from Test::More, but you
+    can still only import the symbols originally defined in Test::Leaner
+    (hence the functions from Test::More that are not implemented in
+    Test::Leaner will not be imported). If your version of Test::More is too
+    old and doesn't have some symbols (like "note" or "done_testing"), they
+    will be replaced in Test::Leaner by croaking stubs.
+
+    This may be useful if your Test::Leaner-based test script fails and you
+    want extra diagnostics.
 
 FUNCTIONS
     The following functions from Test::More are implemented and exported by
     default.
 
   "plan [ tests => $count | 'no_plan' | skip_all => $reason ]"
+    See "plan" in Test::More.
+
   "skip $reason => $count"
+    See "skip" in Test::More.
+
   "done_testing [ $count ]"
+    See "done_testing" in Test::More.
+
   "ok $ok [, $desc ]"
+    See "ok" in Test::More.
+
   "pass [ $desc ]"
+    See "pass" in Test::More.
+
   "fail [ $desc ]"
+    See "fail" in Test::More.
+
   "is $got, $expected [, $desc ]"
+    See "is" in Test::More.
+
   "isnt $got, $expected [, $desc ]"
+    See "isnt" in Test::More.
+
   "like $got, $regexp_expected [, $desc ]"
+    See "like" in Test::More.
+
   "unlike $got, $regexp_expected, [, $desc ]"
+    See "unlike" in Test::More.
+
   "cmp_ok $got, $op, $expected [, $desc ]"
+    See "cmp_ok" in Test::More.
+
   "is_deeply $got, $expected [, $desc ]"
+    See "is_deeply" in Test::More.
+
   "diag @text"
+    See "diag" in Test::More.
+
   "note @text"
+    See "note" in Test::More.
+
   "BAIL_OUT [ $desc ]"
+    See "BAIL_OUT" in Test::More.
+
     Test::Leaner also provides some functions of its own, which are never
     exported.
 
@@ -96,7 +148,7 @@ FUNCTIONS
 DEPENDENCIES
     perl 5.6.
 
-    Exporter, Scalar::Util, Test::More.
+    Exporter, Test::More.
 
 AUTHOR
     Vincent Pit, "<perl at profvince.com>", <http://www.profvince.com>.
