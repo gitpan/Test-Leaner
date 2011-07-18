@@ -19,13 +19,16 @@ my $ret = ok 1;
 ok $ret, 'ok(true) returns true';
 
 {
- package Test::Leaner::TestOverload::AlwaysFalse;
+ package Test::Leaner::TestOverload::AlwaysTrue;
 
- use overload 'bool' => sub { 1 };
+ use overload (
+  'bool' => sub { 1 },
+  '""'   => sub { '' },
+ );
 
  sub new { bless { }, shift }
 }
 
-my $z = Test::Leaner::TestOverload::AlwaysFalse->new;
+my $z = Test::Leaner::TestOverload::AlwaysTrue->new;
 
 ok $z, 'ok($overloaded_true)';

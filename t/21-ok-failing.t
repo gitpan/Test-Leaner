@@ -54,7 +54,10 @@ reset_buffer {
 {
  package Test::Leaner::TestOverload::AlwaysFalse;
 
- use overload 'bool' => sub { !1 };
+ use overload (
+  'bool' => sub { !1 },
+  '""'   => sub { 'true' },
+ );
 
  sub new { bless { }, shift }
 }

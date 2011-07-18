@@ -32,8 +32,15 @@ my @syms = qw<
  BAIL_OUT
 >;
 
+unless ($Test::More::VERSION > 0.51) {
+ delete $main::{$_} for @syms;
+}
+
 for (@syms) {
  eval { Test::Leaner->import(import => [ $_ ]) };
- tm_is $@,            '',                          "import $_";
- tm_is prototype($_), prototype("Test::More::$_"), "prototype $_";
+ tm_is $@, '', "import $_";
+ my $proto = ($_ eq 'unlike' and $Test::More::VERSION < 0.4802)
+             ? '$$;$'
+             : prototype("Test::More::$_");
+ tm_is prototype($_), $proto, "prototype $_";
 }

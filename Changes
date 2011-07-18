@@ -1,5 +1,14 @@
 Revision history for Test-Leaner
 
+0.03    2011-07-18 13:20 UTC
+        + Chg : The fallback interface will croak if you try to import a symbol
+                of Test::More that is not implemented in Test::Leaner.
+        + Fix : The fallback interface should now handle the 'import' parameter
+                properly.
+        + Doc : Document that is_deeply() returns the result of the test, that
+                isnt() honors 'ne' overloading, and that isn't() is not aliased
+                to isnt().
+
 0.02    2010-12-29 17:00 UTC
         + Add : You can fall back to use Test::More by setting the
                 PERL_TEST_LEANER_USES_TEST_MORE environment variable.

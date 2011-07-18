@@ -3,6 +3,14 @@
 use strict;
 use warnings;
 
+BEGIN {
+ if ($^V ge v5.8.4 and $^V le v5.8.5) {
+  require Test::More;
+  Test::More::plan(skip_all
+                       => 'goto may segfault randomly on perl 5.8.4 and 5.8.5');
+ }
+}
+
 BEGIN { $ENV{PERL_TEST_LEANER_USES_TEST_MORE} = 1 }
 
 use Test::Leaner;
@@ -20,36 +28,16 @@ BEGIN {
  Test::More::is($loaded, 1, 'Test::More has been loaded');
 }
 
-sub get_subroutine {
- my ($stash, $name) = @_;
-
- my $glob = $stash->{$name};
- return undef unless $glob;
-
- return *$glob{CODE};
-}
+use lib 't/lib';
+use Test::Leaner::TestImport qw<
+ get_subroutine has_test_more_version default_exports
+>;
 
 my $leaner_stash = \%Test::Leaner::;
 my $more_stash   = \%Test::More::;
 my $this_stash   = \%main::;
 
-my @exported = qw<
- plan
- skip
- done_testing
- pass
- fail
- ok
- is
- isnt
- like
- unlike
- cmp_ok
- is_deeply
- diag
- note
- BAIL_OUT
->;
+my @exported = default_exports;
 
 for (@exported) {
  my $more_variant     = get_subroutine($more_stash, $_);
@@ -98,27 +86,33 @@ for (@only_in_test_leaner) {
                 "$_ was not imported into main");
 }
 
-my @only_in_test_more = qw<
- use_ok
- require_ok
- can_ok
- isa_ok
- new_ok
- subtest
- explain
- todo_skip
->;
+SKIP:
+{
+ Test::More::skip('Test::More::plan exports stuff on Test::More <= 0.51'
+                                 => 2 * 8) unless has_test_more_version('0.51');
 
-for (@only_in_test_more) {
- my $more_variant = get_subroutine($more_stash, $_);
+ my @only_in_test_more = qw<
+  use_ok
+  require_ok
+  can_ok
+  isa_ok
+  new_ok
+  subtest
+  explain
+  todo_skip
+ >;
 
- SKIP: {
-  Test::More::skip("$_ is not implemented in this version of Test::More" => 2)
-                   unless defined $more_variant;
+ for (@only_in_test_more) {
+  my $more_variant = get_subroutine($more_stash, $_);
 
-  Test::More::ok(!exists $leaner_stash->{$_},
-                 "$_ was not imported into Test::Leaner");
-  Test::More::ok(!exists $this_stash->{$_},
-                 "$_ was not imported into main");
+  SKIP: {
+   Test::More::skip("$_ is not implemented in this version of Test::More" => 2)
+                    unless defined $more_variant;
+
+   Test::More::ok(!exists $leaner_stash->{$_},
+                  "$_ was not imported into Test::Leaner");
+   Test::More::ok(!exists $this_stash->{$_},
+                  "$_ was not imported into main");
+  }
  }
 }
