@@ -7,7 +7,7 @@ my $memory_stream;
 my $buf_ref;
 
 sub capture_to_buffer {
- return unless $] >= 5.008;
+ return unless "$]" >= 5.008;
 
  die "Can't call capture_to_buffer twice" if $memory_stream;
 

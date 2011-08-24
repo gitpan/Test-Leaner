@@ -10,11 +10,11 @@ Test::Leaner - A slimmer Test::More for when you favor performance over complete
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -82,7 +82,7 @@ my $main_process;
 BEGIN {
  $main_process = $$;
 
- if ($] >= 5.008 and $INC{'threads.pm'}) {
+ if ("$]" >= 5.008 and $INC{'threads.pm'}) {
   my $use_ithreads = do {
    require Config;
    no warnings 'once';
@@ -495,7 +495,7 @@ my %binops = (
  'and' => 'and',
 
  '||'  => 'hor',
- ('//' => 'dor') x ($] >= 5.010),
+ ('//' => 'dor') x ("$]" >= 5.010),
  '&&'  => 'hand',
 
  '|'   => 'bor',
@@ -520,7 +520,7 @@ my %binops = (
 
  '=~'  => 'like',
  '!~'  => 'unlike',
- ('~~' => 'smartmatch') x ($] >= 5.010),
+ ('~~' => 'smartmatch') x ("$]" >= 5.010),
 
  '+'   => 'add',
  '-'   => 'substract',
@@ -883,6 +883,12 @@ You can find documentation for this module with the perldoc command.
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2010,2011 Vincent Pit, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+Except for the fallback implementation of the internal C<_reftype> function, which has been taken from L<Scalar::Util> and is
+
+Copyright 1997-2007 Graham Barr, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 

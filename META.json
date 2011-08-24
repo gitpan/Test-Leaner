@@ -4,7 +4,7 @@
       "Vincent Pit <perl@profvince.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "ExtUtils::MakeMaker version 6.58, CPAN::Meta::Converter version 2.110930001",
+   "generated_by" : "ExtUtils::MakeMaker version 6.59, CPAN::Meta::Converter version 2.112150",
    "license" : [
       "perl_5"
    ],
@@ -53,5 +53,5 @@
          "url" : "http://git.profvince.com/?p=perl%2Fmodules%2FTest-Leaner.git"
       }
    },
-   "version" : "0.03"
+   "version" : "0.04"
 }
