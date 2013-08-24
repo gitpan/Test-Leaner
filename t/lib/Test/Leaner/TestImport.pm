@@ -78,7 +78,7 @@ sub test_import_arg {
  local $Test::Builder::Level = ($Test::Builder::Level || 0) + 1;
 
  my $use_fallback = $ENV{PERL_TEST_LEANER_USES_TEST_MORE};
- if ($use_fallback and "$]" >= 5.008004 and "$]" <= 5.008005) {
+ if ($use_fallback and "$]" >= 5.008_004 and "$]" <= 5.008_005) {
   Test::More::plan(skip_all
                        => 'goto may segfault randomly on perl 5.8.4 and 5.8.5');
  } else {

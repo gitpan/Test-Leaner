@@ -3,7 +3,7 @@ NAME
     completeness.
 
 VERSION
-    Version 0.04
+    Version 0.05
 
 SYNOPSIS
         use Test::Leaner tests => 10_000;
@@ -77,55 +77,101 @@ FUNCTIONS
     The following functions from Test::More are implemented and exported by
     default.
 
-  "plan [ tests => $count | 'no_plan' | skip_all => $reason ]"
+  "plan"
+        plan tests => $count;
+        plan 'no_plan';
+        plan skip_all => $reason;
+
     See "plan" in Test::More.
 
-  "skip $reason => $count"
+  "skip"
+        skip $reason => $count;
+
     See "skip" in Test::More.
 
-  "done_testing [ $count ]"
+  "done_testing"
+        done_testing;
+        done_testing $count;
+
     See "done_testing" in Test::More.
 
-  "ok $ok [, $desc ]"
+  "ok"
+        ok $ok;
+        ok $ok, $desc;
+
     See "ok" in Test::More.
 
-  "pass [ $desc ]"
+  "pass"
+        pass;
+        pass $desc;
+
     See "pass" in Test::More.
 
-  "fail [ $desc ]"
+  "fail"
+        fail;
+        fail $desc;
+
     See "fail" in Test::More.
 
-  "is $got, $expected [, $desc ]"
+  "is"
+        is $got, $expected;
+        is $got, $expected, $desc;
+
     See "is" in Test::More.
 
-  "isnt $got, $expected [, $desc ]"
+  "isnt"
+        isnt $got, $expected;
+        isnt $got, $expected, $desc;
+
     See "isnt" in Test::More.
 
-  "like $got, $regexp_expected [, $desc ]"
+  "like"
+        like $got, $regexp_expected;
+        like $got, $regexp_expected, $desc;
+
     See "like" in Test::More.
 
-  "unlike $got, $regexp_expected, [, $desc ]"
+  "unlike"
+        unlike $got, $regexp_expected;
+        unlike $got, $regexp_expected, $desc;
+
     See "unlike" in Test::More.
 
-  "cmp_ok $got, $op, $expected [, $desc ]"
+  "cmp_ok"
+        cmp_ok $got, $op, $expected;
+        cmp_ok $got, $op, $expected, $desc;
+
     See "cmp_ok" in Test::More.
 
-  "is_deeply $got, $expected [, $desc ]"
+  "is_deeply"
+        is_deeply $got, $expected;
+        is_deeply $got, $expected, $desc;
+
     See "is_deeply" in Test::More.
 
-  "diag @text"
+  "diag"
+        diag @lines;
+
     See "diag" in Test::More.
 
-  "note @text"
+  "note"
+        note @lines;
+
     See "note" in Test::More.
 
-  "BAIL_OUT [ $desc ]"
+  "BAIL_OUT"
+        BAIL_OUT;
+        BAIL_OUT $desc;
+
     See "BAIL_OUT" in Test::More.
 
     Test::Leaner also provides some functions of its own, which are never
     exported.
 
-  "tap_stream [ $fh ]"
+  "tap_stream"
+        my $tap_fh = tap_stream;
+        tap_stream $fh;
+
     Read/write accessor for the filehandle to which the tests are outputted.
     On write, it also turns autoflush on onto $fh.
 
@@ -134,7 +180,10 @@ FUNCTIONS
 
     Defaults to "STDOUT".
 
-  "diag_stream [ $fh ]"
+  "diag_stream"
+        my $diag_fh = diag_stream;
+        diag_stream $fh;
+
     Read/write accessor for the filehandle to which the diagnostics are
     printed. On write, it also turns autoflush on onto $fh.
 
@@ -173,7 +222,7 @@ SUPPORT
         perldoc Test::Leaner
 
 COPYRIGHT & LICENSE
-    Copyright 2010,2011 Vincent Pit, all rights reserved.
+    Copyright 2010,2011,2013 Vincent Pit, all rights reserved.
 
     This program is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.

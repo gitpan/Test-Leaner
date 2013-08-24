@@ -24,7 +24,6 @@ t/16-done_testing.t
 t/17-plan-done_testing.t
 t/18-skip.t
 t/19-comments.t
-t/80-threads.t
 t/20-ok.t
 t/21-ok-failing.t
 t/22-is.t
@@ -32,9 +31,6 @@ t/24-cmp_ok.t
 t/26-is_deeply.t
 t/27-is_deeply-failing.t
 t/28-is_deeply-deep.t
-t/91-pod.t
-t/92-pod-coverage.t
-t/95-portability-files.t
-t/99-kwalitee.t
+t/80-threads.t
 t/lib/Test/Leaner/TestHelper.pm
 t/lib/Test/Leaner/TestImport.pm

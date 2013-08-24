@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 BEGIN {
- if ("$]" >= 5.008004 and "$]" <= 5.008005) {
+ if ("$]" >= 5.008_004 and "$]" <= 5.008_005) {
   require Test::More;
   Test::More::plan(skip_all
                        => 'goto may segfault randomly on perl 5.8.4 and 5.8.5');
